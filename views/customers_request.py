@@ -10,6 +10,10 @@ CUSTOMERS = [
     {
         "id": 3,
         "name": "George Clooney"
+    },
+    {
+        "id": 4,
+        "name": "Derek"
     }
 ]
 

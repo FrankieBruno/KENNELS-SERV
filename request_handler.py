@@ -50,41 +50,36 @@ class HandleRequests(BaseHTTPRequestHandler):
 
     def do_GET(self):
         """get items"""
-        self._set_headers(200)
         response = {}  # Default response
 
         # Parse the URL and capture the tuple that is returned
         (resource, id) = self.parse_url(self.path)
-
         if resource == "animals":
             if id is not None:
                 response = get_single_animal(id)
-
             else:
                 response = get_all_animals()
-
-        if resource == "locations":
+        elif resource == "locations":
             if id is not None:
                 response = get_single_location(id)
-
             else:
                 response = get_all_locations()
-
-        if resource == "employees":
+        elif resource == "employees":
             if id is not None:
                 response = get_single_location(id)
-
             else:
                 response = get_all_employees()
-
-        if resource == "customers":
+        elif resource == "customers":
             if id is not None:
                 response = get_single_customer(id)
-
             else:
                 response = get_all_customers()
 
-            self.wfile.write(json.dumps(response).encode())
+        if response is not None:
+            self._set_headers(200)
+        else:
+            self._set_headers(404)
+        self.wfile.write(json.dumps(response).encode())
 
     # Here's a method on the class that overrides the parent's method.
     # It handles any POST request.
@@ -100,33 +95,69 @@ class HandleRequests(BaseHTTPRequestHandler):
         # Parse the URL
         (resource, id) = self.parse_url(self.path)
 
-        # Initialize new animal
-        new_animal = None
-
-        # Add a new animal to the list. Don't worry about
-        # the orange squiggle, you'll define the create_animal
-        # function next.
+        # Initialize new resource
+        new_resource = None
         if resource == "animals":
-            new_animal = create_animal(post_body)
+            if "name" in post_body and "species" in post_body and "status" in post_body:
+                new_resource = create_animal(post_body)
+                self._set_headers(201)
+                self.wfile.write(json.dumps(new_resource).encode())
+            else:
+                self._set_headers(400)
+                created_resource = {
+                    "message":
+                        f'{"name is required, " if "name" not in post_body else ""}'
+                        f'{"species is required, " if "species" not in post_body else ""}'
+                        f'{"status is required" if "status" not in post_body else ""}'
+                }
+                self.wfile.write(json.dumps(created_resource).encode())
 
-        # Encode the new animal and send in response
-            self.wfile.write(json.dumps(new_animal).encode())
+        elif resource == "locations":
+            if "name" in post_body and "address" in post_body:
+                new_resource = create_location(post_body)
+                self._set_headers(201)
+                self.wfile.write(json.dumps(new_resource).encode())
+            else:
+                self._set_headers(400)
+                created_resource = {
+                    "message":
+                        f'{"name is required, " if "name" not in post_body else ""}'
+                        f'{"address is required" if "address" not in post_body else ""}'
+                }
+                self.wfile.write(json.dumps(created_resource).encode())
 
-        new_location = None
-        if resource == "locations":
-            new_location = create_location(post_body)
-            self.wfile.write(json.dumps(new_location).encode())
+        elif resource == "employees":
+            if "name" in post_body:
+                new_resource = create_employee(post_body)
+                self._set_headers(201)
+                self.wfile.write(json.dumps(new_resource).encode())
+            else:
+                self._set_headers(400)
+                created_resource = {
+                    "message":
+                        f'{"name is required" if "name" not in post_body else ""}'
+                }
+                self.wfile.write(json.dumps(created_resource).encode())
 
-        new_employee = None
-        if resource == "employees":
-            new_employee = create_employee(post_body)
-            self.wfile.write(json.dumps(new_employee).encode())
+        elif resource == "customers":
+            if "name" in post_body:
+                new_resource = create_customer(post_body)
+                self._set_headers(201)
+                self.wfile.write(json.dumps(new_resource).encode())
+            else:
+                self._set_headers(400)
+                created_resource = {
+                    "message":
+                        f'{"name is required" if "name" not in post_body else ""}'
+                }
+                self.wfile.write(json.dumps(created_resource).encode())
 
-        new_customer = None
-        if resource == "customers":
-            new_customer = create_customer(post_body)
-            self.wfile.write(json.dumps(new_customer).encode())
-
+        else:
+            self._set_headers(400)
+            created_resource = {
+                "message": "Invalid resource requested"
+            }
+            self.wfile.write(json.dumps(created_resource).encode())
     def do_DELETE(self):
         """delete animal"""
         # Set a 204 response code
