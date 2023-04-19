@@ -85,7 +85,7 @@ class HandleRequests(BaseHTTPRequestHandler):
     # It handles any POST request.
     def do_POST(self):
         """docstring"""
-        self._set_headers(201)
+        
         content_len = int(self.headers.get('content-length', 0))
         post_body = self.rfile.read(content_len)
 
@@ -98,7 +98,7 @@ class HandleRequests(BaseHTTPRequestHandler):
         # Initialize new resource
         new_resource = None
         if resource == "animals":
-            if "name" in post_body and "species" in post_body and "status" in post_body:
+            if "name" in post_body and "species" in post_body and "status" in post_body and "locationId" in post_body and "customerId" in post_body:
                 new_resource = create_animal(post_body)
                 self._set_headers(201)
                 self.wfile.write(json.dumps(new_resource).encode())
@@ -108,6 +108,8 @@ class HandleRequests(BaseHTTPRequestHandler):
                     "message":
                         f'{"name is required, " if "name" not in post_body else ""}'
                         f'{"species is required, " if "species" not in post_body else ""}'
+                        f'{"locationId is required, " if "locationId" not in post_body else ""}'
+                        f'{"customerId is required, " if "customerId" not in post_body else ""}'
                         f'{"status is required" if "status" not in post_body else ""}'
                 }
                 self.wfile.write(json.dumps(created_resource).encode())
