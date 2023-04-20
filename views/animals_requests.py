@@ -1,3 +1,6 @@
+import sqlite3
+import json
+from models import Animal
 from .locations_requests import get_single_location
 from .customers_request import get_single_customer
 
@@ -5,7 +8,7 @@ ANIMALS = [
     {
         "id": 1,
         "name": "Snickers",
-        "species": "Dog",
+        "breed": "Dog",
         "locationId": 1,
         "customerId": 4,
         "status": "Admitted"
@@ -13,7 +16,7 @@ ANIMALS = [
     {
         "id": 2,
         "name": "Roman",
-        "species": "Dog",
+        "breed": "Dog",
         "locationId": 1,
         "customerId": 2,
         "status": "Admitted"
@@ -21,7 +24,7 @@ ANIMALS = [
     {
         "id": 3,
         "name": "Blue",
-        "species": "Cat",
+        "breed": "Cat",
         "locationId": 2,
         "customerId": 1,
         "status": "Admitted"
@@ -29,34 +32,102 @@ ANIMALS = [
 ]
 
 
-def get_all_animals():
-    """this gets animals"""
-    return ANIMALS
+# def get_all_animals():
+#     """this gets animals"""
+#     return ANIMALS
 
+def get_all_animals():
+    # Open a connection to the database
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+
+        # Just use these. It's a Black Box.
+        conn.row_factory = sqlite3.Row
+        db_cursor = conn.cursor()
+
+        # Write the SQL query to get the information you want
+        db_cursor.execute("""
+        SELECT
+            a.id,
+            a.name,
+            a.breed,
+            a.location_id,
+            a.customer_id,
+            a.status
+        FROM animal a
+        """)
+
+        # Initialize an empty list to hold all animal representations
+        animals = []
+
+        # Convert rows of data into a Python list
+        dataset = db_cursor.fetchall()
+
+        # Iterate list of data returned from database
+        for row in dataset:
+
+            # Create an animal instance from the current row.
+            # Note that the database fields are specified in
+            # exact order of the parameters defined in the
+            # Animal class above.
+            animal = Animal(row['id'], row['name'], row['breed'],
+                            row['status'], row['location_id'],
+                            row['customer_id'])
+
+            animals.append(animal.__dict__)
+
+    return animals
 # Function with a single parameter
 
 
+# def get_single_animal(id):
+#     """id to find a single animal object"""
+#     # Variable to hold the found animal, if it exists:
+#     requested_animal = None
+
+#     # Iterate the ANIMALS list above. Very similar to the
+#     # for..of loops you used in JavaScript.
+#     for animal in ANIMALS:
+#         # Dictionaries in Python use [] notation to find a key
+#         # instead of the dot notation that JavaScript used.
+#         if animal["id"] == id:
+#             requested_animal = animal
+#             # below I am accessing the locations .py and the customer
+#             # .py so it can then match the id I need and return the requested data
+#             requested_animal["location"] = get_single_location(
+#                 requested_animal["locationId"])
+#             requested_animal["customer"] = get_single_customer(
+#                 requested_animal["customerId"])
+
+#     return requested_animal
+
 def get_single_animal(id):
-    """id to find a single animal object"""
-    # Variable to hold the found animal, if it exists:
-    requested_animal = None
+    with sqlite3.connect("./kennel.sqlite3") as conn:
+        conn.row_factory = sqlite3.Row
+        db_cursor = conn.cursor()
 
-    # Iterate the ANIMALS list above. Very similar to the
-    # for..of loops you used in JavaScript.
-    for animal in ANIMALS:
-        # Dictionaries in Python use [] notation to find a key
-        # instead of the dot notation that JavaScript used.
-        if animal["id"] == id:
-            requested_animal = animal
-            # below I am accessing the locations .py and the customer
-            # .py so it can then match the id I need and return the requested data
-            requested_animal["location"] = get_single_location(
-                requested_animal["locationId"])
-            requested_animal["customer"] = get_single_customer(
-                requested_animal["customerId"])
+        # Use a ? parameter to inject a variable's value
+        # into the SQL statement.
+        db_cursor.execute("""
+        SELECT
+            a.id,
+            a.name,
+            a.breed,
+            a.location_id,
+            a.customer_id,
+            a.status
+        FROM animal a
+        WHERE a.id = ?
+        """, ( id, ))
 
-    return requested_animal
+        # Load the single result into memory
+        data = db_cursor.fetchone()
 
+        # Create an animal instance from the current row
+        animal = Animal(data['id'], data['name'], data['breed'],
+                            data['status'], data['location_id'],
+                            data['customer_id'])
+
+        return animal.__dict__
 
 def create_animal(animal):
     """create animal"""
@@ -102,3 +173,4 @@ def update_animal(id, new_animal):
             # Found the animal. Update the value.
             ANIMALS[index] = new_animal
             break
+

@@ -3,5 +3,6 @@
     "python.linting.pylintEnabled": true,
     "python.analysis.diagnosticSeverityOverrides": {
       "reportGeneralTypeIssues": "none"
-    }
+    },
+    "wolf.disableHotModeWarning": true
  }
