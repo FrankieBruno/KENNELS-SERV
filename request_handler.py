@@ -14,6 +14,9 @@ from views import delete_customer, update_customer
 from views import delete_employee, update_employee
 from views import delete_location, update_location
 from views import get_customers_by_email
+from views import get_locations_by_name
+from views import get_animals_by_location
+from views import get_employees_by_location
 from urllib.parse import urlparse, parse_qs
 
 
@@ -98,6 +101,11 @@ class HandleRequests(BaseHTTPRequestHandler):
                     response = get_single_customer(id)
                 else:
                     response = get_all_customers()
+            elif resource == "locations":
+                if id is not None:
+                    response = get_single_location(id)
+                else:
+                    response = get_all_locations()
 
         else:  # There is a ? in the path, run the query param functions
             (resource, query) = parsed
@@ -105,6 +113,12 @@ class HandleRequests(BaseHTTPRequestHandler):
             # see if the query dictionary has an email key
             if query.get('email') and resource == 'customers':
                 response = get_customers_by_email(query['email'][0])
+            if query.get('name') and resource == 'locations':
+                response = get_locations_by_name(query['name'][0])
+            if query.get('location_id') and resource == 'animals':
+                response = get_animals_by_location(query['location_id'][0])
+            if query.get('status') and resource == 'employees':
+                response = get_employees_by_location(query['location_id'][0])
 
         self.wfile.write(json.dumps(response).encode())
 
