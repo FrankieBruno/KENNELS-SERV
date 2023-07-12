@@ -1,5 +1,6 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs
 from views import get_all_animals, get_single_animal
 from views import create_animal
 from views import delete_animal
@@ -17,7 +18,6 @@ from views import get_customers_by_email
 from views import get_locations_by_name
 from views import get_animals_by_location
 from views import get_employees_by_location
-from urllib.parse import urlparse, parse_qs
 
 
 # Here's a class. It inherits from another class.
@@ -30,11 +30,14 @@ class HandleRequests(BaseHTTPRequestHandler):
     """Controls the functionality of any GET, PUT, POST, DELETE requests to the server"""
 
     # replace the parse_url function in the class
+    # add this import to the top of the file
+    # replace the parse_url function in the class
     def parse_url(self, path):
         """Parse the url into the resource and id"""
         parsed_url = urlparse(path)
         path_params = parsed_url.path.split('/')  # ['', 'animals', 1]
         resource = path_params[1]
+
         if parsed_url.query:
             query = parse_qs(parsed_url.query)
             return (resource, query)
@@ -106,6 +109,11 @@ class HandleRequests(BaseHTTPRequestHandler):
                     response = get_single_location(id)
                 else:
                     response = get_all_locations()
+            elif resource == "employees":
+                if id is not None:
+                    response = get_single_employee(id)
+                else:
+                    response = get_all_employees()
 
         else:  # There is a ? in the path, run the query param functions
             (resource, query) = parsed
@@ -117,7 +125,7 @@ class HandleRequests(BaseHTTPRequestHandler):
                 response = get_locations_by_name(query['name'][0])
             if query.get('location_id') and resource == 'animals':
                 response = get_animals_by_location(query['location_id'][0])
-            if query.get('status') and resource == 'employees':
+            if query.get('location_id') and resource == 'employees':
                 response = get_employees_by_location(query['location_id'][0])
 
         self.wfile.write(json.dumps(response).encode())
@@ -139,7 +147,7 @@ class HandleRequests(BaseHTTPRequestHandler):
         # Initialize new resource
         new_resource = None
         if resource == "animals":
-            if "name" in post_body and "breed" in post_body and "status" in post_body and "locationId" in post_body and "customerId" in post_body:
+            if "name" in post_body and "breed" in post_body and "status" in post_body and "location_id" in post_body and "customer_id" in post_body:
                 new_resource = create_animal(post_body)
                 self._set_headers(201)
                 self.wfile.write(json.dumps(new_resource).encode())
@@ -148,9 +156,9 @@ class HandleRequests(BaseHTTPRequestHandler):
                 created_resource = {
                     "message":
                         f'{"name is required, " if "name" not in post_body else ""}'
-                        f'{"species is required, " if "breed" not in post_body else ""}'
-                        f'{"locationId is required, " if "locationId" not in post_body else ""}'
-                        f'{"customerId is required, " if "customerId" not in post_body else ""}'
+                        f'{"breed is required, " if "breed" not in post_body else ""}'
+                        f'{"location_id is required, " if "location_id" not in post_body else ""}'
+                        f'{"customer_id is required, " if "customer_id" not in post_body else ""}'
                         f'{"status is required" if "status" not in post_body else ""}'
                 }
                 self.wfile.write(json.dumps(created_resource).encode())
@@ -240,8 +248,6 @@ class HandleRequests(BaseHTTPRequestHandler):
 
         # A method that handles any PUT request.
     def do_PUT(self):
-        """update animal"""
-        self._set_headers(204)
         content_len = int(self.headers.get('content-length', 0))
         post_body = self.rfile.read(content_len)
         post_body = json.loads(post_body)
@@ -249,30 +255,17 @@ class HandleRequests(BaseHTTPRequestHandler):
         # Parse the URL
         (resource, id) = self.parse_url(self.path)
 
-        # Delete a single animal from the list
+        success = False
+
         if resource == "animals":
-            update_animal(id, post_body)
+            success = update_animal(id, post_body)
+        # rest of the elif's
 
-        # Encode the new animal and send in response
-            self.wfile.write("".encode())
-
-        if resource == "employees":
-            update_employee(id, post_body)
-
-        # Encode the new animal and send in response
-            self.wfile.write("".encode())
-
-        if resource == "locations":
-            update_location(id, post_body)
-
-        # Encode the new animal and send in response
-            self.wfile.write("".encode())
-
-        if resource == "customers":
-            update_customer(id, post_body)
-
-        # Encode the new animal and send in response
-            self.wfile.write("".encode())
+        if success:
+            self._set_headers(204)
+        else:
+            self._set_headers(404)
+        self.wfile.write("".encode())
 
     def _set_headers(self, status):
         # Notice this Docstring also includes information about the arguments passed to the function
